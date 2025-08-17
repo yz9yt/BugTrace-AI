@@ -1,0 +1,16 @@
+# Defines the services that make up the application.
+services:
+  # The main application service.
+  app:
+    # Instructions for how to build the image for this service.
+    build:
+      # Use the Dockerfile in the current directory.
+      context: .
+      dockerfile: Dockerfile
+    # Set a custom, predictable name for the container.
+    container_name: bugtrace-ai-container
+    # Map port 6869 on the host machine to port 80 inside the container (where Nginx is listening).
+    ports:
+      - "6869:80"
+    # Restart policy: automatically restart the container if it stops, unless it was manually stopped.
+    restart: unless-stopped

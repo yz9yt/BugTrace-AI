@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" href="data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke-width='1.5' stroke='cyan'%3e%3cpath stroke-linecap='round' stroke-linejoin='round' d='M12 21a9.004 9.004 0 0 0 8.716-6.747M12 21a9.004 9.004 0 0 1-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 0 1 7.843 4.582M12 3a8.997 8.997 0 0 0-7.843 4.582m15.686 0A11.953 11.953 0 0 1 12 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0 1 21 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0 1 12 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 0 1 3 12c0-1.605.42-3.113 1.157-4.418' /%3e%3c/svg%3e" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BugTrace-AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+      :root {
+        /* Refined Dark Theme */
+        --background-start-rgb: 10, 10, 15;
+        --background-end-rgb: 25, 25, 35;
+        --text-primary: #e5e7eb; /* gray-200 */
+        --text-secondary: #9ca3af; /* gray-400 */
+        --text-tertiary: #6b7280; /* gray-500 */
+        --glass-bg: rgba(22, 24, 32, 0.5);
+        --glass-border: rgba(255, 255, 255, 0.08);
+        --control-bg: rgba(31, 41, 55, 0.5); /* gray-800 with alpha */
+        --control-border: rgba(75, 85, 99, 0.7); /* gray-600 with alpha */
+      }
+      
+      body {
+        background-color: rgb(var(--background-start-rgb));
+        background-image: linear-gradient(to bottom, rgb(var(--background-start-rgb)), rgb(var(--background-end-rgb))),
+                          url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800"%3E%3Cg fill="none" stroke="%23222" stroke-width="1"%3E%3Cpath d="M769 229L1037 260.9M927 880L731 737 729 564 636 382 612 153 775 83 934 3M313 361L-44 441 147 880 418 541 369 395 313 361"/%3E%3Cpath d="M438 429L283 762 609 764 438 429"/%3E%3C/g%3E%3Cg fill="%23222"%3E%3Ccircle cx="769" cy="229" r="2"/%3E%3Ccircle cx="538" cy="761" r="2"/%3E%3Ccircle cx="636" cy="382" r="2"/%3E%3Ccircle cx="731" cy="737" r="2"/%3E%3Ccircle cx="934" cy="3" r="2"/%3E%3C/g%3E%3C/svg%3E');
+        background-blend-mode: color-dodge;
+        background-attachment: fixed;
+        color: var(--text-primary);
+        font-family: 'Inter', sans-serif;
+      }
+      
+      *, *::before, *::after {
+        transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+      }
+
+      /* Custom utility classes based on CSS variables */
+      .text-text-primary { color: var(--text-primary); }
+      .text-text-secondary { color: var(--text-secondary); }
+      .text-text-tertiary { color: var(--text-tertiary); }
+      .bg-glass-bg { 
+        background-color: var(--glass-bg);
+        border-color: var(--glass-border);
+      }
+      .border-glass-border { border-color: var(--glass-border); }
+      .bg-control-bg { background-color: var(--control-bg); }
+      .border-control-border { border-color: var(--control-border); }
+
+      /* Custom scrollbar styling */
+      ::-webkit-scrollbar {
+        width: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: rgba(10, 10, 15, 0.5);
+      }
+      ::-webkit-scrollbar-thumb {
+        background: rgba(75, 85, 99, 0.5);
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: rgba(107, 114, 128, 0.5);
+      }
+      
+      /* Fix for browser autofill styles */
+      input:-webkit-autofill,
+      input:-webkit-autofill:hover,
+      input:-webkit-autofill:focus,
+      input:-webkit-autofill:active {
+        -webkit-box-shadow: 0 0 0 30px #1f2937 inset !important;
+        -webkit-text-fill-color: #ffffff !important;
+      }
+
+      /* Fix for select dropdown */
+      select, select:focus {
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+        background-position: right 0.5rem center;
+        background-repeat: no-repeat;
+        background-size: 1.5em 1.5em;
+        padding-right: 2.5rem;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        appearance: none;
+      }
+      option {
+        background-color: #1f2937;
+        color: #f9fafb;
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@^19.1.1",
+    "react-dom/": "https://esm.sh/react-dom@^19.1.1/",
+    "react/": "https://esm.sh/react@^19.1.1/",
+    "url": "https://esm.sh/url@^0.11.4",
+    "vite": "https://esm.sh/vite@^7.1.2",
+    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.0.0",
+    "marked": "https://esm.sh/marked@^16.1.2"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body class="font-sans">
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  <script type="module" src="/index.tsx"></script>
+</body>
+</html>

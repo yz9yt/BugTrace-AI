@@ -1,0 +1,6 @@
+{
+  "name": "BugTrace-AI_Beta v4",
+  "description": "A tool that uses the Gemini AI to help developers and security analysts identify and fix vulnerabilities in web applications through static code analysis (SAST) and URL analysis (DAST).",
+  "requestFramePermissions": [],
+  "prompt": ""
+}

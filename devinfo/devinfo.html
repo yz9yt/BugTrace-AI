@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Developer Information - BugTrace-AI</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            background-color: #111827;
+            color: #d1d5db;
+            margin: 0;
+            padding: 2rem;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background-color: #1f2937;
+            border: 1px solid #374151;
+            border-radius: 8px;
+            padding: 2rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        h1, h2, h3, h4 {
+            color: #60a5fa;
+            border-bottom: 1px solid #374151;
+            padding-bottom: 0.5rem;
+        }
+        h1 { font-size: 2.5rem; }
+        h2 { font-size: 2rem; margin-top: 2.5rem; }
+        h3 { font-size: 1.5rem; margin-top: 2rem; color: #93c5fd; }
+        h4 { font-size: 1.2rem; margin-top: 1.5rem; border-bottom: none; color: #a5b4fc; }
+        code {
+            background-color: #374151;
+            color: #e5e7eb;
+            padding: 0.2em 0.4em;
+            margin: 0;
+            font-size: 85%;
+            border-radius: 3px;
+            font-family: "Fira Code", "Courier New", monospace;
+        }
+        pre {
+            background-color: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 1rem;
+            overflow-x: auto;
+            white-space: pre;
+            font-size: 0.9rem;
+        }
+        pre code {
+            background-color: transparent;
+            padding: 0;
+            font-size: 100%;
+        }
+        .comment { color: #8b949e; }
+        .keyword { color: #ff7b72; }
+        .string { color: #a5d6ff; }
+        .function { color: #d2a8ff; }
+        .property { color: #d2a8ff;}
+        .value { color: #a5d6ff; }
+        nav {
+            background: #1f2937;
+            padding: 1rem;
+            border-radius: 6px;
+            border: 1px solid #374151;
+            margin-bottom: 2rem;
+        }
+        nav h3 {
+            margin-top: 0;
+            color: #60a5fa;
+        }
+        nav ul {
+            list-style: none;
+            padding: 0;
+            margin-top: 1rem;
+        }
+        nav > ul > li {
+            margin-bottom: 0.5rem;
+        }
+        nav ul ul {
+            padding-left: 1rem;
+            margin-top: 0.25rem;
+        }
+        nav ul li a {
+            color: #9ca3af;
+            text-decoration: none;
+            transition: color 0.2s;
+            display: block;
+            padding: 0.2rem 0;
+        }
+        nav ul li a:hover {
+            color: #e5e7eb;
+        }
+        .important, .info, .warning {
+            padding: 1rem;
+            margin: 1.5rem 0;
+            border-radius: 4px;
+        }
+        .important {
+            background-color: rgba(250, 239, 133, 0.1);
+            border-left: 4px solid #facc15;
+        }
+        .info {
+            background-color: rgba(96, 165, 250, 0.1);
+            border-left: 4px solid #60a5fa;
+        }
+        .warning {
+            background-color: rgba(248, 113, 113, 0.1);
+            border-left: 4px solid #f87171;
+        }
+        a {
+            color: #93c5fd;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        ul, ol {
+            padding-left: 20px;
+        }
+        li {
+            margin-bottom: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>BugTrace-AI - Developer Documentation</h1>
+        <p><em>Version: 0.1.1 Beta</em></p>
+
+        <nav>
+            <h3>Table of Contents</h3>
+            <ul>
+                <li><a href="#architecture">1. Project Architecture & Build Process</a></li>
+                <li><a href="#state-management">2. State Management</a></li>
+                <li><a href="#ai-services">3. AI Services & Prompt Engineering</a></li>
+                <li><a href="#feature-deep-dive">4. Core Feature Deep Dive</a></li>
+                <li><a href="#styling">5. Styling Philosophy</a></li>
+                <li><a href="#deployment">6. Deployment & Setup</a></li>
+                <li><a href="#open-source">7. Open Source Contributions</a></li>
+                <li><a href="#file-structure">8. Detailed File Structure</a></li>
+                <li><a href="#workflow">9. Development Workflow</a></li>
+            </ul>
+        </nav>
+
+        <section id="architecture">
+            <h2>1. Project Architecture & Build Process</h2>
+            <p>This project is a modern single-page application (SPA) built with React, TypeScript, and Vite. This stack provides a fast, modern development experience and a highly optimized production build.</p>
+            
+            <h3>Local Development (Vite)</h3>
+            <p>During local development (using <code>npm run dev</code>), the application is served by the Vite development server. Vite leverages the browser's native ES Modules (ESM) support to serve source files on demand. This provides:</p>
+            <ul>
+                <li><strong>Extremely fast startup:</strong> No time-consuming bundling is required to start the server.</li>
+                <li><strong>On-the-fly transpilation:</strong> Vite transpiles TypeScript and JSX into standard JavaScript as the browser requests them.</li>
+                <li><strong>Hot Module Replacement (HMR):</strong> Changes in the code are reflected in the browser instantly, often without a full page reload.</li>
+            </ul>
+
+            <h3>Production Build (Docker)</h3>
+            <p>For production, the application is bundled and optimized using Vite's build process (<code>npm run build</code>). The <code>Dockerfile.txt</code> orchestrates this using a robust multi-stage build:</p>
+            <ol>
+                <li><strong>Stage 1 ('builder'):</strong> A Node.js environment is used to install all dependencies (<code>npm install</code>) and run the production build script (<code>npm run build</code>). This transpiles all TypeScript, bundles the application into highly optimized static JavaScript and CSS files, and places them in a <code>/dist</code> directory.</li>
+                <li><strong>Stage 2 (Nginx):</strong> A lightweight Nginx web server image is used. Only the optimized <code>/dist</code> directory from Stage 1 is copied into the server's public directory.</li>
+            </ol>
+            <p>This multi-stage approach results in a small, secure, and performant final Docker image that contains only the static files needed to run the application, with no source code or build tools included.</p>
+        </section>
+
+        <section id="state-management">
+            <h2>2. State Management</h2>
+            <p>The application employs a pragmatic, tiered approach to state management without external libraries like Redux.</p>
+            <ul>
+                <li><strong>Local State (<code>useState</code>):</strong> Most UI state (input values, loading spinners) is kept local to its component.</li>
+                <li><strong>Lifted State (Prop Drilling):</strong> The main <code>App.tsx</code> component acts as the central hub, managing crucial shared state like the current view, analysis history, and selected reports.</li>
+                <li><strong>Global Context (<code>useContext</code>):</strong> Truly global settings that are needed across the entire application—API keys, theme, selected model—are managed by the <code>SettingsProvider</code>. This avoids prop drilling for ubiquitous data.</li>
+                <li><strong>Custom Hooks:</strong> For complex, self-contained features like the WebSec Agent, custom hooks (e.g., <code>useWebSecAgent</code>) are used to encapsulate all related state and logic, keeping the main <code>App.tsx</code> component clean.</li>
+            </ul>
+        </section>
+
+        <section id="ai-services">
+            <h2>3. AI Services & Prompt Engineering</h2>
+            <p>The <code>services/</code> directory contains the most critical pieces of application logic. It is the sole interface between the frontend UI and the generative AI models, abstracting all API complexity away from the React components.</p>
+            
+            <h4>The Service Layer (<code>Service.ts</code>)</h4>
+            <p>This file acts as a facade for all AI interactions. No React component should ever call <code>fetch</code> directly. Instead, they call a function from <code>Service.ts</code> (e.g., <code>analyzeUrl</code>, <code>forgePayloads</code>). This centralizes logic and makes the application easier to maintain and debug.</p>
+
+            <h4>Prompt Engineering (<code>services/prompts/</code>)</h4>
+            <p>The effectiveness of the entire application hinges on high-quality prompt engineering. All prompts are modularized and stored in the <code>prompts</code> directory. This separation of concerns allows for easy tuning of the AI's behavior without altering the core application logic.</p>
+            
+            <h4>Reliability Through Recursion</h4>
+            <p>Generative AI can be non-deterministic. To improve reliability, key analysis functions (like DAST and SAST) use a recursive, multi-attempt strategy. The UI asks for an "Analysis Depth" (e.g., 3), and the service layer then calls the AI 3 times, each with a slightly different prompt variation. The results are then passed to a final "consolidation" prompt, where the AI is asked to merge and de-duplicate the findings into a single, high-quality report. This significantly reduces false negatives and improves consistency.</p>
+
+            <h4>API Resilience (<code>utils/apiManager.ts</code>)</h4>
+            <p>To ensure the application is robust and doesn't abuse the API, a centralized manager handles all requests. It implements:</p>
+            <ul>
+                <li><strong>Rate Limiting:</strong> Enforces a minimum delay between API calls to prevent hitting rate limits.</li>
+                <li><strong>Request Cancellation:</strong> Allows the user to abort in-flight API requests via a "Stop" button in the header.</li>
+                <li><strong>Circuit Breaker:</strong> A critical resilience pattern. If the API fails a set number of times consecutively (e.g., 10 times), the circuit breaker "trips" and blocks all further API calls for a cooldown period (e.g., 30 seconds). This prevents the application from hammering a failing service and provides a clear error message to the user.</li>
+            </ul>
+        </section>
+
+        <section id="feature-deep-dive">
+            <h2>4. Core Feature Deep Dive</h2>
+            <p>Each tool's effectiveness relies on its unique prompt engineering methodology.</p>
+            <ul>
+                <li><strong>DAST (Non-Invasive):</strong> The tool is explicitly prompted to use its search capabilities to gather public information about a target. It does not send any packets or payloads, making it a safe reconnaissance tool.</li>
+                <li><strong>SAST (Persona-Based):</strong> The SAST prompts cycle through different "personas" (e.g., "bug bounty hunter," "meticulous code auditor") for each recursive analysis run. This encourages the AI to look at the code from different perspectives, yielding a more comprehensive set of findings.</li>
+                <li><strong>DOM XSS Pathfinder (Data Flow Tracing):</strong> This prompt uses a two-step process. First, it asks the AI to identify all sources and sinks. Then, critically, it asks the AI to trace the data flow between them. The final report is structured to show "Connected Paths" (high confidence) separately from "Unconnected Findings" (informational), which greatly reduces noise.</li>
+            </ul>
+        </section>
+
+        <section id="styling">
+            <h2>5. Styling Philosophy</h2>
+            <p>The application uses a hybrid approach for a consistent and maintainable "hacker" aesthetic.</p>
+            <ul>
+                <li><strong>Tailwind CSS:</strong> The primary styling is done via Tailwind CSS utility classes directly in the JSX for rapid development. This is loaded via the CDN in <code>index.html</code>.</li>
+                <li><strong>CSS Variables:</strong> Key theme values (colors, backgrounds) are defined as CSS variables in a <code>:root</code> block in <code>index.html</code>. This allows for easy global theme changes and provides a consistent palette for custom components.</li>
+                <li><strong>Glassmorphism:</strong> The "glass" effect is achieved with a semi-transparent background color (<code>--glass-bg</code>) and a subtle border (<code>--glass-border</code>), combined with the <code>backdrop-blur</code> utility from Tailwind.</li>
+            </ul>
+        </section>
+
+        <section id="deployment">
+            <h2>6. Deployment & Setup</h2>
+            <p>The application is designed for easy deployment using Docker. This method correctly runs the Vite build process and configures an Nginx web server to serve the resulting static files.</p>
+            <div class="info">
+                <p><strong>Instructions:</strong></p>
+                <ol>
+                    <li><strong>Make the Script Executable:</strong> In your terminal, run: <br><code>chmod +x dockerizer.sh.txt</code> (and rename it to <code>dockerizer.sh</code>).</li>
+                    <li><strong>Run the Script:</strong> Now, execute the script to build and run the container:<br><code>./dockerizer.sh</code></li>
+                </ol>
+                 <p>The script will build the Docker image and launch the container. You can then access the application at <a href="http://localhost:6869">http://localhost:6869</a>.</p>
+            </div>
+        </section>
+
+        <section id="open-source">
+            <h2>7. Open Source Contributions</h2>
+            <p>This project is open-source and contributions are welcome. To ensure a smooth and secure development process, please be aware of the following files:</p>
+            
+            <h3>LICENSE</h3>
+            <p>The project is licensed under the <strong>MIT License</strong>. This is a permissive license that allows for broad use, modification, and distribution, both in open-source and proprietary projects, provided the original copyright and license notice are included.</p>
+
+        </section>
+        
+        <section id="file-structure">
+            <h2>8. Detailed File Structure</h2>
+            <p>A brief overview of the key files and directories in the project.</p>
+            <ul>
+                <li><code>/components</code>: Contains all reusable React components that form the UI.</li>
+                <li><code>/contexts</code>: Holds React Context providers, such as <code>SettingsProvider.tsx</code> for global state.</li>
+                <li><code>/hooks</code>: Contains custom React hooks that encapsulate complex logic (e.g., <code>useWebSecAgent.tsx</code>).</li>
+                <li><code>/services</code>: The core logic layer.
+                    <ul>
+                        <li><code>Service.ts</code>: The main entry point for all API calls.</li>
+                        <li><code>/prompts</code>: Directory containing all prompt engineering logic, separated by feature.</li>
+                        <li><code>systemPrompts.ts</code>: Defines the core "personas" for the AI agents.</li>
+                    </ul>
+                </li>
+                <li><code>/utils</code>: Helper functions and utilities, such as the <code>apiManager.ts</code> and <code>reportExporter.ts</code>.</li>
+                <li><code>/devinfo</code> & <code>/userinfo</code>: Static HTML files for the documentation modals.</li>
+                <li><code>App.tsx</code>: The root component that manages the main application state and routing.</li>
+                <li><code>types.ts</code>: Centralized TypeScript type definitions and enums.</li>
+                <li><code>Dockerfile.txt</code> & <code>docker-compose.yml.txt</code>: Configuration for building and running the application with Docker.</li>
+            </ul>
+        </section>
+
+        <section id="workflow">
+            <h2>9. Development Workflow</h2>
+            <p>To make a change, simply edit the relevant <code>.tsx</code> or <code>.ts</code> file. The Vite development server (started with <code>npm run dev</code>) will automatically update the browser with your changes, often without a full page reload, thanks to Hot Module Replacement (HMR).</p>
+        </section>
+    </div>
+</body>
+</html>
