@@ -5,6 +5,10 @@
 ![Docker](https://img.shields.io/badge/Docker-Supported-blue?logo=docker)
 ![Made with](https://img.shields.io/badge/Made%20with-❤️-red)
 
+****
+
+[![BugTrace-AI in action](https://img.youtube.com/vi/exrqesNWp1M/0.jpg)](https://youtu.be/exrqesNWp1M)
+
 ## 📑 Table of Contents
 - [🚨 Disclaimer](#-disclaimer)
 - [✨ Features](#-features)
