@@ -7,7 +7,9 @@
 
 ****
 
-[![BugTrace-AI in action](https://img.youtube.com/vi/exrqesNWp1M/0.jpg)](https://youtu.be/exrqesNWp1M)
+| Product Demo English | Demostracion del producto Spanish |
+| :---: | :---: |
+| [![Product Demo English](https://img.youtube.com/vi/exrqesNWp1M/0.jpg)](https://youtu.be/exrqesNWp1M) | [![Demostración del producto en español](https://img.youtube.com/vi/CwT66Uqe6to/0.jpg)](https://youtu.be/CwT66Uqe6to) |
 
 ## 📑 Table of Contents
 - [🚨 Disclaimer](#-disclaimer)
