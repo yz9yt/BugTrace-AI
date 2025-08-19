@@ -1,9 +1,11 @@
 # BugTrace-AI
 
+[![Wiki Documentation](https://img.shields.io/badge/Wiki%20Documentation-000?logo=wikipedia&logoColor=white)](https://deepwiki.com/yz9yt/BugTrace-AI)
 ![License](https://img.shields.io/badge/License-MIT-green.svg)
 ![Status](https://img.shields.io/badge/Status-Beta-orange)
 ![Docker](https://img.shields.io/badge/Docker-Supported-blue?logo=docker)
 ![Made with](https://img.shields.io/badge/Made%20with-❤️-red)
+
 
 ****
 
