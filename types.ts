@@ -1,4 +1,5 @@
 // @author: Albert C | @yz9yt | github.com/yz9yt
+// types.ts
 // version 0.1 Beta
 export enum View {
   URL_ANALYSIS = 'URL_ANALYSIS',
@@ -160,3 +161,9 @@ export type ApiOptions = {
     apiKey: string;
     model: string;
 };
+
+// New interface for vulnerability validation result
+export interface ValidationResult {
+    is_valid: boolean;
+    reasoning: string;
+}
