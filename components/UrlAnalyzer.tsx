@@ -1,6 +1,8 @@
-// version 0.0.46
+// @author: Albert C | @yz9yt | github.com/yz9yt
+// components/UrlAnalyzer.tsx
+// version 0.1 Beta
 import React, { useState, useCallback, useEffect } from 'react';
-import { analyzeUrl, performDeepAnalysis, consolidateReports } from '../services/Service.ts';
+import { analyzeUrl, performDeepAnalysis, consolidateReports, validateVulnerability } from '../services/Service.ts';
 import { Vulnerability, VulnerabilityReport, DastScanType } from '../types.ts';
 import { useApiOptions } from '../hooks/useApiOptions.ts';
 import { VulnerabilityCard } from './VulnerabilityCard.tsx';
@@ -41,6 +43,7 @@ export const UrlAnalyzer: React.FC<UrlAnalyzerProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [scanType, setScanType] = useState<DastScanType>('recon');
   const [deepAnalysis, setDeepAnalysis] = useState<boolean>(false);
+  const [validateFindings, setValidateFindings] = useState<boolean>(true); // NEW STATE for validation checkbox
   const [depth, setDepth] = useState<number>(3);
   const { apiOptions, isApiKeySet } = useApiOptions();
 
@@ -57,6 +60,10 @@ export const UrlAnalyzer: React.FC<UrlAnalyzerProps> = ({
 
   const handleDeepAnalysisChange = (checked: boolean) => {
     setDeepAnalysis(checked);
+  };
+  
+  const handleValidateFindingsChange = (checked: boolean) => { // Handler for new checkbox
+    setValidateFindings(checked);
   };
 
   const handleAnalyze = useCallback(async () => {
@@ -109,37 +116,50 @@ export const UrlAnalyzer: React.FC<UrlAnalyzerProps> = ({
             return;
         }
 
-        // --- Phase 3: Deep Analysis (Optional) ---
-        if (deepAnalysis) {
-            setAnalysisLog(prev => [...prev, 'Starting in-depth analysis of each finding...']);
+        // --- Phase 3: Validation & Deep Analysis (Optional) ---
+        let processedVulnerabilities: Vulnerability[] = baseReport.vulnerabilities;
+        if (deepAnalysis || validateFindings) { // Execute this block if Deep Analysis OR Validation is enabled
+            setAnalysisLog(prev => [...prev, 'Starting validation and analysis of each finding...']);
 
-            const enrichedVulnerabilities: Vulnerability[] = [];
-            for (let i = 0; i < baseReport.vulnerabilities.length; i++) {
-                const vuln = baseReport.vulnerabilities[i];
-                setAnalysisLog(prev => [...prev, `[${i + 1}/${baseReport.vulnerabilities.length}] Deep analyzing: ${vuln.vulnerability}...`]);
+            const finalFindings: Vulnerability[] = [];
+            for (let i = 0; i < processedVulnerabilities.length; i++) {
+                const vuln = processedVulnerabilities[i];
+                setAnalysisLog(prev => [...prev, `[${i + 1}/${processedVulnerabilities.length}] Validating finding: ${vuln.vulnerability}...`]);
+                
                 try {
-                    const enrichedVuln = await performDeepAnalysis(vuln, url, apiOptions!);
-                    enrichedVulnerabilities.push(enrichedVuln);
-                } catch (deepError: any) {
-                    console.error(`Deep analysis failed for ${vuln.vulnerability}`, deepError);
-                    setAnalysisLog(prev => [...prev, ` -> Deep analysis failed. Keeping original finding.`]);
-                    enrichedVulnerabilities.push(vuln);
+                    const validationResult = await validateVulnerability(vuln, apiOptions!);
+                    if (validationResult.is_valid) {
+                        setAnalysisLog(prev => [...prev, ` -> Finding validated.`]);
+                        if (deepAnalysis) { // Only perform deep analysis if that specific checkbox is also ticked
+                            setAnalysisLog(prev => [...prev, ` -> Starting deep analysis...`]);
+                            const enrichedVuln = await performDeepAnalysis(vuln, url, apiOptions!);
+                            finalFindings.push(enrichedVuln);
+                        } else {
+                            finalFindings.push(vuln); // If only validation, just add the validated finding
+                        }
+                    } else {
+                        setAnalysisLog(prev => [...prev, ` -> Filtering potential false positive: ${vuln.vulnerability} (${validationResult.reasoning})`]);
+                    }
+                } catch (e: any) {
+                    console.error(`Validation failed for ${vuln.vulnerability}`, e);
+                    setAnalysisLog(prev => [...prev, ` -> Validation failed. Keeping original finding as-is.`]);
+                    finalFindings.push(vuln); // If validation fails, keep the original finding
                 }
             }
             
-            setAnalysisLog(prev => [...prev, 'Deep Analysis Complete. Generating final report...']);
-            const finalReport = { ...baseReport, vulnerabilities: enrichedVulnerabilities };
-            onAnalysisComplete(finalReport);
-        } else {
-            onAnalysisComplete(baseReport);
+            processedVulnerabilities = finalFindings;
         }
+
+        setAnalysisLog(prev => [...prev, 'Final report generation complete.']);
+        const finalReport = { ...baseReport, vulnerabilities: processedVulnerabilities };
+        onAnalysisComplete(finalReport);
 
     } catch (e: any) {
         const errorMessage = e.message || 'An unexpected error occurred.';
         setError(errorMessage);
         onAnalysisError(errorMessage);
     }
-  }, [url, scanType, deepAnalysis, depth, onAnalysisStart, onAnalysisComplete, onAnalysisError, setAnalysisLog, apiOptions, isApiKeySet, onShowApiKeyWarning]);
+  }, [url, scanType, deepAnalysis, validateFindings, depth, onAnalysisStart, onAnalysisComplete, onAnalysisError, setAnalysisLog, apiOptions, isApiKeySet, onShowApiKeyWarning]);
 
   return (
     <ToolLayout
@@ -209,6 +229,27 @@ export const UrlAnalyzer: React.FC<UrlAnalyzerProps> = ({
                       Enable Deep Analysis
                   </label>
                   <p className="text-text-secondary">Performs a second, specialized analysis on each finding for a higher-quality report. (Slower, may use more API credits)</p>
+              </div>
+          </div>
+          
+           {/* New Checkbox for Validation */}
+          <div className="relative flex items-start mt-4 p-4 bg-purple-900/20 border border-purple-500/20 rounded-lg cursor-pointer" onClick={() => handleValidateFindingsChange(!validateFindings)}>
+              <div className="flex items-center h-5">
+                  <input
+                      id="validate-findings"
+                      name="validate-findings"
+                      type="checkbox"
+                      checked={validateFindings}
+                      onChange={(e) => handleValidateFindingsChange(e.target.checked)}
+                      className="focus:ring-cyan-500 h-4 w-4 text-cyan-600 border-gray-500 bg-control-bg rounded"
+                      disabled={isLoading}
+                  />
+              </div>
+              <div className="ml-3 text-sm">
+                  <label htmlFor="validate-findings" className="font-medium text-text-primary flex items-center gap-2">
+                      Enable Finding Validation
+                  </label>
+                  <p className="text-text-secondary">Performs an extra pass to filter out potential AI hallucinations and false positives. (Recommended)</p>
               </div>
           </div>
       </div>
