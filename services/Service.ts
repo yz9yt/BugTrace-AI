@@ -1,8 +1,9 @@
 // @author: Albert C | @yz9yt | github.com/yz9yt
+// services/Service.ts
 // version 0.1 Beta
-import { 
-    ApiOptions, Vulnerability, VulnerabilityReport, XssPayloadResult, ForgedPayloadResult, 
-    ChatMessage, ExploitContext, HeadersReport, DomXssAnalysisResult, 
+import {
+    ApiOptions, Vulnerability, VulnerabilityReport, XssPayloadResult, ForgedPayloadResult,
+    ChatMessage, ExploitContext, HeadersReport, DomXssAnalysisResult,
     FileUploadAnalysisResult, DastScanType, SqlmapCommandResult,
     Severity
 } from '../types.ts';
@@ -27,10 +28,11 @@ import {
     createConsolidationPrompt,
     createFixJsonPrompt,
     createPrivescPathfinderPrompt,
+    createValidationPrompt
 } from './prompts/index.ts';
-import { 
+import {
     enforceRateLimit,
-    updateRateLimitTimestamp, 
+    updateRateLimitTimestamp,
     incrementApiCallCount,
     getNewAbortSignal,
     setRequestStatus,
@@ -176,6 +178,12 @@ export const analyzeUrl = async (url: string, scanType: DastScanType, options: A
       result.analyzedTarget = url;
   }
   return processReport(result);
+};
+
+export const validateVulnerability = async (vulnerability: Vulnerability, options: ApiOptions): Promise<{is_valid: boolean; reasoning: string}> => {
+    const prompt = createValidationPrompt(vulnerability);
+    const resultText = await callApi(prompt, options, true);
+    return await parseJsonWithCorrection<{is_valid: boolean; reasoning: string}>(resultText, prompt, options);
 };
 
 export const consolidateReports = async (reports: VulnerabilityReport[], options: ApiOptions): Promise<VulnerabilityReport> => {
