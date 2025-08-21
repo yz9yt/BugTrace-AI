@@ -1,10 +1,6 @@
 #!/bin/bash
-# BugTrace-AI Dockerizer Script (using Docker Compose)
-# This script builds and runs the application using docker-compose.
 
 echo "--- Stopping any previous containers... ---"
-# Stop and remove containers, volumes, and networks created by 'up'.
-# The '-v' flag removes named volumes, ensuring a clean state.
 docker-compose -f docker-compose.yml down -v
 
 if [ $? -ne 0 ]; then
@@ -12,19 +8,27 @@ if [ $? -ne 0 ]; then
 fi
 
 echo "--- Building and starting the application... ---"
-# Build the image if it doesn't exist (or if the Dockerfile has changed)
-# and start the services in detached mode (-d).
 docker-compose -f docker-compose.yml up --build -d
 
 if [ $? -eq 0 ]; then
     echo "--- Application is now running! ---"
     echo "Access it at: http://localhost:6869"
     echo "To stop the application, run: docker-compose -f docker-compose.yml down"
-    
-    # Lanzar Firefox y abrir la URL
-    echo "Launching Firefox..."
-    firefox http://localhost:6869 &
+
+    # === Try to launch Firefox with checks ===
+    sleep 3  # Wait a bit for the server to start
+
+    if [ -z "$DISPLAY" ]; then
+        echo "⚠️  No GUI detected (DISPLAY is not set). Cannot launch Firefox."
+        echo "💡 Open http://localhost:6869 manually in your browser."
+    elif ! command -v firefox &> /dev/null; then
+        echo "⚠️  Firefox is not installed."
+        echo "💡 Install it with: sudo apt install firefox"
+    else
+        echo "🚀 Launching Firefox..."
+        firefox http://localhost:6869 &
+    fi
 else
-    echo "Error: Docker Compose failed. Please ensure Docker and docker-compose are installed and running."
+    echo "❌ Docker Compose failed. Check Docker is running and docker-compose.yml is correct."
     exit 1
 fi
