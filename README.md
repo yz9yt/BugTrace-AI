@@ -99,6 +99,11 @@ The application is designed to be run easily and securely using Docker.
 - Docker Compose
 
 ### Installation & Running
+One liner installer and run:
+```bash
+git clone https://github.com/yz9yt/BugTrace-AI.git && cd BugTrace-AI && chmod +x dockerizer.sh && sudo ./dockerizer.sh
+```
+
 Clone the repository:
 
 ```bash
