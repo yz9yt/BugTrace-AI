@@ -20,6 +20,10 @@ if [ $? -eq 0 ]; then
     echo "--- Application is now running! ---"
     echo "Access it at: http://localhost:6869"
     echo "To stop the application, run: docker-compose -f docker-compose.yml down"
+    
+    # Lanzar Firefox y abrir la URL
+    echo "Launching Firefox..."
+    firefox http://localhost:6869 &
 else
     echo "Error: Docker Compose failed. Please ensure Docker and docker-compose are installed and running."
     exit 1
