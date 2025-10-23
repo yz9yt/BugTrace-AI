@@ -18,3 +18,4 @@ export * from './jwt.ts';
 export * from './consolidation.ts';
 export * from './jsonFix.ts';
 export * from './validation.ts';
+export * from './httpExploit.ts';

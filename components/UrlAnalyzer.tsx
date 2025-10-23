@@ -23,6 +23,7 @@ interface UrlAnalyzerProps {
   onSendToJwtAnalyzer: (token: string) => void;
   onShowExploitAssistant: (vulnerability: Vulnerability, targetUrl: string) => void;
   onShowSqlExploitAssistant: (vulnerability: Vulnerability, targetUrl: string) => void;
+  onShowHttpExploitAnalyzer: (vulnerability: Vulnerability, targetUrl: string) => void;
   onAnalyzeWithAgent: (vulnerability: Vulnerability, targetUrl: string) => void;
   setAnalysisLog: React.Dispatch<React.SetStateAction<string[]>>;
 }
@@ -36,7 +37,7 @@ const scanOptions: { id: DastScanType; name: string; description: string; }[] = 
 export const UrlAnalyzer: React.FC<UrlAnalyzerProps> = ({ 
     onAnalysisStart, onAnalysisComplete, onAnalysisError, onShowApiKeyWarning,
     report, isLoading, analysisLog, 
-    onSendToPayloadForge, onSendToJwtAnalyzer, onShowExploitAssistant, onShowSqlExploitAssistant, onAnalyzeWithAgent, 
+    onSendToPayloadForge, onSendToJwtAnalyzer, onShowExploitAssistant, onShowSqlExploitAssistant, onShowHttpExploitAnalyzer, onAnalyzeWithAgent, 
     setAnalysisLog
 }) => {
   const [url, setUrl] = useState<string>('');
@@ -307,6 +308,7 @@ export const UrlAnalyzer: React.FC<UrlAnalyzerProps> = ({
                     onSendToJwtAnalyzer={onSendToJwtAnalyzer}
                     onShowExploitAssistant={() => onShowExploitAssistant(vuln, report.analyzedTarget)}
                     onShowSqlExploitAssistant={() => onShowSqlExploitAssistant(vuln, report.analyzedTarget)}
+                    onShowHttpExploitAnalyzer={() => onShowHttpExploitAnalyzer(vuln, report.analyzedTarget)}
                     onAnalyzeWithAgent={() => onAnalyzeWithAgent(vuln, report.analyzedTarget)}
                 />
               ))}

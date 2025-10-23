@@ -5,7 +5,7 @@ import {
     ApiOptions, Vulnerability, VulnerabilityReport, XssPayloadResult, ForgedPayloadResult,
     ChatMessage, ExploitContext, HeadersReport, DomXssAnalysisResult,
     FileUploadAnalysisResult, DastScanType, SqlmapCommandResult,
-    Severity
+    Severity, HttpExploitIteration, HttpExploitAnalysisResult
 } from '../types.ts';
 import {
     createSastAnalysisPrompt,
@@ -28,7 +28,9 @@ import {
     createConsolidationPrompt,
     createFixJsonPrompt,
     createPrivescPathfinderPrompt,
-    createValidationPrompt
+    createValidationPrompt,
+    createHttpExploitAnalysisPrompt,
+    createHttpExploitFinalSummaryPrompt
 } from './prompts/index.ts';
 import {
     enforceRateLimit,
@@ -448,4 +450,50 @@ export const testApi = async (apiKey: string, model: string): Promise<{ success:
     } catch (error: any) {
         return { success: false, error: error.message || 'A network error occurred.' };
     }
+};
+
+// HTTP Exploitation Analysis with Iterations
+export const analyzeHttpExploitation = async (
+    vulnerability: Vulnerability,
+    targetUrl: string,
+    options: ApiOptions,
+    maxIterations: number = 3
+): Promise<HttpExploitAnalysisResult> => {
+    const iterations: HttpExploitIteration[] = [];
+    const previousAnalyses: string[] = [];
+
+    // Perform iterative analysis
+    for (let i = 1; i <= maxIterations; i++) {
+        const prompt = createHttpExploitAnalysisPrompt(
+            vulnerability,
+            targetUrl,
+            i,
+            maxIterations,
+            previousAnalyses.length > 0 ? previousAnalyses : undefined
+        );
+        
+        const resultText = await callApi(prompt, options, true);
+        const iteration = await parseJsonWithCorrection<HttpExploitIteration>(resultText, prompt, options);
+        
+        iterations.push(iteration);
+        previousAnalyses.push(iteration.analysis);
+    }
+
+    // Generate final summary
+    const summaryPrompt = createHttpExploitFinalSummaryPrompt(vulnerability, targetUrl, iterations);
+    const summaryText = await callApi(summaryPrompt, options, true);
+    const summary = await parseJsonWithCorrection<{
+        final_summary: string;
+        exploitation_feasibility: 'High' | 'Medium' | 'Low' | 'Not Feasible';
+        recommended_actions: string[];
+    }>(summaryText, summaryPrompt, options);
+
+    return {
+        vulnerability_type: vulnerability.vulnerability,
+        target_url: targetUrl,
+        iterations,
+        final_summary: summary.final_summary,
+        exploitation_feasibility: summary.exploitation_feasibility,
+        recommended_actions: summary.recommended_actions
+    };
 };

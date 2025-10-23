@@ -23,6 +23,7 @@ import { DevDocumentationModal } from './components/DevDocumentationModal.tsx';
 import { UserDocumentationModal } from './components/UserDocumentationModal.tsx';
 import { XssExploitationAssistant } from './components/XssExploitationAssistant.tsx';
 import { SqlExploitationAssistant } from './components/SqlExploitationAssistant.tsx';
+import { HttpExploitAnalyzer } from './components/HttpExploitAnalyzer.tsx';
 import { WebSecAgent } from './components/WebSecAgent.tsx';
 import { DisclaimerModal } from './components/DisclaimerModal.tsx';
 import { SettingsModal } from './components/SettingsModal.tsx';
@@ -51,6 +52,7 @@ const App: React.FC = () => {
   const [jwtForAnalyzer, setJwtForAnalyzer] = useState<string | null>(null);
   const [exploitAssistantContext, setExploitAssistantContext] = useState<ExploitContext | null>(null);
   const [sqlExploitAssistantContext, setSqlExploitAssistantContext] = useState<ExploitContext | null>(null);
+  const [httpExploitContext, setHttpExploitContext] = useState<ExploitContext | null>(null);
 
   const [disclaimerAccepted, setDisclaimerAccepted] = useState(false);
   const [disclaimerRejected, setDisclaimerRejected] = useState(false);
@@ -99,6 +101,7 @@ const App: React.FC = () => {
     setAnalysisLog([]);
     setExploitAssistantContext(null);
     setSqlExploitAssistantContext(null);
+    setHttpExploitContext(null);
   };
 
   const handleAnalysisComplete = (report: VulnerabilityReport) => {
@@ -143,6 +146,7 @@ const App: React.FC = () => {
     setSelectedReport(report);
     setExploitAssistantContext(null);
     setSqlExploitAssistantContext(null);
+    setHttpExploitContext(null);
     if (report.analyzedTarget.startsWith('http')) {
       setActiveView(View.URL_ANALYSIS);
       setActiveSubTab(Tool.DAST);
@@ -188,19 +192,29 @@ const App: React.FC = () => {
   const handleShowExploitAssistant = (vulnerability: Vulnerability, targetUrl?: string) => {
     setExploitAssistantContext({ vulnerability, targetUrl });
     setSqlExploitAssistantContext(null);
+    setHttpExploitContext(null);
     setActiveView(View.XSS_EXPLOIT_ASSISTANT);
   };
   
   const handleShowSqlExploitAssistant = (vulnerability: Vulnerability, targetUrl: string) => {
     setSqlExploitAssistantContext({ vulnerability, targetUrl });
     setExploitAssistantContext(null);
+    setHttpExploitContext(null);
     setActiveView(View.SQL_EXPLOIT_ASSISTANT);
+  };
+
+  const handleShowHttpExploitAnalyzer = (vulnerability: Vulnerability, targetUrl: string) => {
+    setHttpExploitContext({ vulnerability, targetUrl });
+    setExploitAssistantContext(null);
+    setSqlExploitAssistantContext(null);
+    setActiveView(View.HTTP_EXPLOIT_ANALYZER);
   };
 
   const handleShowAgent = () => {
     setActiveView(View.WEB_SEC_AGENT);
     setExploitAssistantContext(null);
     setSqlExploitAssistantContext(null);
+    setHttpExploitContext(null);
   };
 
   const handleLightModeClick = () => {
@@ -211,6 +225,7 @@ const App: React.FC = () => {
     setActiveView(View.WEB_SEC_AGENT);
     setExploitAssistantContext(null);
     setSqlExploitAssistantContext(null);
+    setHttpExploitContext(null);
     startAnalysisWithAgent(vulnerability, analyzedTarget);
   };
 
@@ -218,6 +233,7 @@ const App: React.FC = () => {
     setActiveView(View.WEB_SEC_AGENT);
     setExploitAssistantContext(null);
     setSqlExploitAssistantContext(null);
+    setHttpExploitContext(null);
     startReportAnalysisWithAgent(reportText, analysisType);
   };
 
@@ -232,6 +248,7 @@ const App: React.FC = () => {
     setIsMenuOpen(false);
     setExploitAssistantContext(null); // Clear context when navigating
     setSqlExploitAssistantContext(null);
+    setHttpExploitContext(null);
     // Set default sub-tab for views that have them
     switch (view) {
         case View.URL_ANALYSIS:
@@ -308,6 +325,7 @@ const App: React.FC = () => {
                 onSendToJwtAnalyzer={handleSendToJwtAnalyzer}
                 onShowExploitAssistant={handleShowExploitAssistant}
                 onShowSqlExploitAssistant={handleShowSqlExploitAssistant}
+                onShowHttpExploitAnalyzer={handleShowHttpExploitAnalyzer}
                 onAnalyzeWithAgent={handleAnalyzeWithAgent}
               />
             )}
@@ -438,6 +456,13 @@ const App: React.FC = () => {
             return (
                 <SqlExploitationAssistant
                     exploitContext={sqlExploitAssistantContext}
+                    onShowApiKeyWarning={handleShowApiKeyWarning}
+                />
+            );
+      case View.HTTP_EXPLOIT_ANALYZER:
+            return (
+                <HttpExploitAnalyzer
+                    exploitContext={httpExploitContext}
                     onShowApiKeyWarning={handleShowApiKeyWarning}
                 />
             );

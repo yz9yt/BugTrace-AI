@@ -12,6 +12,7 @@ export enum View {
   WEB_SEC_AGENT = 'WEB_SEC_AGENT',
   XSS_EXPLOIT_ASSISTANT = 'XSS_EXPLOIT_ASSISTANT', // This is a special view, not in the main navigator
   SQL_EXPLOIT_ASSISTANT = 'SQL_EXPLOIT_ASSISTANT', // Special view for SQLi
+  HTTP_EXPLOIT_ANALYZER = 'HTTP_EXPLOIT_ANALYZER', // HTTP exploitation analysis view
   HISTORY = 'HISTORY',
 }
 
@@ -166,4 +167,22 @@ export type ApiOptions = {
 export interface ValidationResult {
     is_valid: boolean;
     reasoning: string;
+}
+
+// HTTP Exploitation Analysis interfaces
+export interface HttpExploitIteration {
+    iteration: number;
+    analysis: string;
+    confidence: number;
+    findings: string[];
+    recommendation: string;
+}
+
+export interface HttpExploitAnalysisResult {
+    vulnerability_type: string;
+    target_url: string;
+    iterations: HttpExploitIteration[];
+    final_summary: string;
+    exploitation_feasibility: 'High' | 'Medium' | 'Low' | 'Not Feasible';
+    recommended_actions: string[];
 }
