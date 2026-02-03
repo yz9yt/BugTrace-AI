@@ -1,50 +1,32 @@
 // @author: Albert C | @yz9yt | github.com/yz9yt
 // version 0.1 Beta
-import { Severity, LLMProvider } from './types.ts';
+import { Severity } from './types.ts';
 
-export const APP_VERSION = '0.1.3 Beta';
+export const APP_VERSION = '0.1.2 Beta';
 
-// Provider-specific API endpoints
-export const API_ENDPOINTS: Record<LLMProvider, string> = {
-    openai: 'https://api.openai.com/v1/chat/completions',
-    anthropic: 'https://api.anthropic.com/v1/messages',
-    google: 'https://generativelanguage.googleapis.com/v1beta/models',
-    openrouter: 'https://openrouter.ai/api/v1/chat/completions',
-};
+// This now serves as a fallback list in case the API fetch fails.
+export const OPEN_ROUTER_MODELS = [
+    'google/gemini-2.5-flash',
+    'anthropic/claude-3.5-sonnet-20241022',
+    'anthropic/claude-3.5-sonnet',
+    'anthropic/claude-3-5-haiku-20241022',
+    'anthropic/claude-3-opus-20240229',
+    'openai/gpt-4o',
+    'openai/gpt-4o-mini',
+    'openai/gpt-4-turbo',
+    'mistralai/mistral-large',
+    'openai/gpt-3.5-turbo',
+];
 
-// Provider-specific models
-export const PROVIDER_MODELS: Record<LLMProvider, string[]> = {
-    openai: [
-        'gpt-4o',
-        'gpt-4o-mini',
-        'gpt-4-turbo',
-        'gpt-4',
-        'gpt-3.5-turbo',
-    ],
-    anthropic: [
-        'claude-3-5-sonnet-20241022',
-        'claude-3-5-haiku-20241022',
-        'claude-3-opus-20240229',
-        'claude-3-sonnet-20240229',
-        'claude-3-haiku-20240307',
-    ],
-    google: [
-        'gemini-2.0-flash-exp',
-        'gemini-1.5-pro',
-        'gemini-1.5-flash',
-        'gemini-1.0-pro',
-    ],
-    openrouter: [
-        'google/gemini-2.5-flash',
-        'anthropic/claude-3.5-sonnet',
-        'openai/gpt-4o',
-        'mistralai/mistral-large',
-        'openai/gpt-3.5-turbo',
-    ],
-};
+// Default Local AI / LiteLLM settings
+export const DEFAULT_LOCAL_AI_URL = 'http://localhost:4000/v1/chat/completions';
+export const DEFAULT_LOCAL_AI_MODEL = 'gpt-3.5-turbo';
 
-// This now serves as a fallback list in case the API fetch fails (for OpenRouter)
-export const OPEN_ROUTER_MODELS = PROVIDER_MODELS.openrouter;
+// API Provider labels for UI
+export const API_PROVIDER_LABELS = {
+    openrouter: 'OpenRouter',
+    localai: 'Local AI / LiteLLM',
+} as const;
 
 
 export const SEVERITY_STYLES: Record<Severity, { headerBg: string; border: string; text: string }> = {

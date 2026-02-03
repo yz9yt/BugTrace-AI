@@ -1,11 +1,11 @@
 // @author: Albert C | @yz9yt | github.com/yz9yt
 // services/Service.ts
-// version 0.2 Beta
+// version 0.2 Beta - Multi-provider support
 import {
     ApiOptions, Vulnerability, VulnerabilityReport, XssPayloadResult, ForgedPayloadResult,
     ChatMessage, ExploitContext, HeadersReport, DomXssAnalysisResult,
     FileUploadAnalysisResult, DastScanType, SqlmapCommandResult,
-    Severity, LLMProvider
+    Severity, ApiProvider
 } from '../types.ts';
 import {
     createSastAnalysisPrompt,
@@ -40,122 +40,46 @@ import {
     incrementContinuousFailureCount,
     resetContinuousFailureCount,
 } from '../utils/apiManager.ts';
-import { API_ENDPOINTS } from '../constants.ts';
 
-// Helper function to get API endpoint based on provider
-const getApiEndpoint = (provider: LLMProvider, model?: string): string => {
-    if (provider === 'google' && model) {
-        return `${API_ENDPOINTS.google}/${model}:generateContent`;
-    }
-    return API_ENDPOINTS[provider];
+// API endpoint URLs
+const API_URLS = {
+    openrouter: "https://openrouter.ai/api/v1/chat/completions",
+    localai: "", // Will be provided by user
 };
 
-// Helper function to format request body for different providers
-const formatRequestBody = (provider: LLMProvider, model: string, messages: any[], isJson: boolean) => {
-    switch (provider) {
-        case 'openai':
-        case 'openrouter':
-            return {
-                model,
-                messages,
-                ...(isJson && { response_format: { type: "json_object" } }),
-            };
-
-        case 'anthropic':
-            // Anthropic uses a different format
-            const systemMessage = messages.find((m: any) => m.role === 'system');
-            const userMessages = messages.filter((m: any) => m.role !== 'system');
-            return {
-                model,
-                max_tokens: 4096,
-                ...(systemMessage && { system: systemMessage.content }),
-                messages: userMessages.map((m: any) => ({
-                    role: m.role === 'model' ? 'assistant' : m.role,
-                    content: m.content
-                })),
-            };
-
-        case 'google':
-            // Google Gemini uses a different format
-            const contents = messages
-                .filter((m: any) => m.role !== 'system')
-                .map((m: any) => ({
-                    role: m.role === 'model' ? 'model' : 'user',
-                    parts: [{ text: m.content }]
-                }));
-
-            const systemInstruction = messages.find((m: any) => m.role === 'system');
-
-            return {
-                contents,
-                ...(systemInstruction && {
-                    systemInstruction: {
-                        parts: [{ text: systemInstruction.content }]
-                    }
-                }),
-                generationConfig: {
-                    temperature: 0.7,
-                    ...(isJson && { responseMimeType: "application/json" }),
-                }
-            };
-
-        default:
-            throw new Error(`Unsupported provider: ${provider}`);
+const getApiUrl = (options: ApiOptions): string => {
+    if (options.provider === 'localai' && options.baseUrl) {
+        return options.baseUrl;
     }
+    return API_URLS[options.provider];
 };
 
-// Helper function to format request headers for different providers
-const formatRequestHeaders = (provider: LLMProvider, apiKey: string): Record<string, string> => {
-    switch (provider) {
-        case 'openai':
-        case 'openrouter':
-            return {
-                'Authorization': `Bearer ${apiKey}`,
-                'Content-Type': 'application/json',
-            };
-
-        case 'anthropic':
-            return {
-                'x-api-key': apiKey,
-                'anthropic-version': '2023-06-01',
-                'Content-Type': 'application/json',
-            };
-
-        case 'google':
-            // Google uses API key as a query parameter, not in headers
-            return {
-                'Content-Type': 'application/json',
-            };
-
-        default:
-            throw new Error(`Unsupported provider: ${provider}`);
+const getAuthHeader = (options: ApiOptions): Record<string, string> => {
+    const headers: Record<string, string> = {
+        'Content-Type': 'application/json'
+    };
+    
+    if (options.apiKey) {
+        headers['Authorization'] = `Bearer ${options.apiKey}`;
     }
-};
-
-// Helper function to extract content from API response
-const extractResponseContent = (provider: LLMProvider, data: any): string => {
-    switch (provider) {
-        case 'openai':
-        case 'openrouter':
-            return data.choices[0].message.content;
-
-        case 'anthropic':
-            return data.content[0].text;
-
-        case 'google':
-            return data.candidates[0].content.parts[0].text;
-
-        default:
-            throw new Error(`Unsupported provider: ${provider}`);
-    }
+    
+    return headers;
 };
 
 const callApi = async (prompt: string, options: ApiOptions, isJson: boolean = true) => {
     await enforceRateLimit();
     const { apiKey, model, provider } = options;
-    if (!apiKey) {
+    
+    // For non-local providers, API key is required
+    if (provider !== 'localai' && !apiKey) {
         throw new Error("API Key is not configured.");
     }
+    
+    const apiUrl = getApiUrl(options);
+    if (!apiUrl) {
+        throw new Error("API URL is not configured.");
+    }
+    
     const signal = getNewAbortSignal();
 
     try {
@@ -163,44 +87,39 @@ const callApi = async (prompt: string, options: ApiOptions, isJson: boolean = tr
         updateRateLimitTimestamp();
         incrementApiCallCount();
 
-        const messages = [{ role: 'user', content: prompt }];
-        const requestBody = formatRequestBody(provider, model, messages, isJson);
-        const headers = formatRequestHeaders(provider, apiKey);
-
-        // For Google, add API key as query parameter
-        const endpoint = getApiEndpoint(provider, model);
-        const url = provider === 'google' ? `${endpoint}?key=${apiKey}` : endpoint;
-
-        const response = await fetch(url, {
+        const response = await fetch(apiUrl, {
             method: 'POST',
-            headers,
-            body: JSON.stringify(requestBody),
-            signal: signal,
+            headers: getAuthHeader(options),
+            body: JSON.stringify({
+                model: model,
+                messages: [{ role: 'user', content: prompt }],
+                ...(isJson && { response_format: { type: "json_object" } }),
+            }),
+            signal: signal, // Pass the signal to fetch
         });
 
         if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            const errorMessage = errorData?.error?.message || errorData?.message || `API request failed with status ${response.status}`;
-            throw new Error(errorMessage);
+            const errorData = await response.json();
+            throw new Error(errorData?.error?.message || `API request failed with status ${response.status}`);
         }
 
         const data = await response.json();
-        const content = extractResponseContent(provider, data);
-
+        const content = data.choices[0].message.content;
+        
         if (!content) {
             throw new Error("Received an empty response from the AI. The model may have been filtered or refused the request.");
         }
-
-        resetContinuousFailureCount();
+        
+        resetContinuousFailureCount(); // Success, so reset the counter.
         return content;
 
     } catch (error: any) {
-        incrementContinuousFailureCount();
+        incrementContinuousFailureCount(); // Failure, so increment the counter.
         if (error.name === 'AbortError') {
             console.log("API request was cancelled.");
             throw new Error("Request cancelled.");
         }
-        console.error(`Error calling ${provider} API:`, error);
+        console.error("Error calling API:", error);
         throw new Error(error.message || "An unknown error occurred while contacting the AI service.");
     } finally {
         setRequestStatus('idle');
@@ -443,12 +362,19 @@ export const generateSstiPayloads = async (engine: string, goal: string, options
 };
 
 // --- Chat Functions ---
-const callLLMChat = async (history: ChatMessage[], options: ApiOptions) => {
+const callOpenRouterChat = async (history: ChatMessage[], options: ApiOptions) => {
     await enforceRateLimit();
     const { apiKey, model, provider } = options;
-    if (!apiKey) {
+    
+    if (provider !== 'localai' && !apiKey) {
         throw new Error("API Key is not configured.");
     }
+    
+    const apiUrl = getApiUrl(options);
+    if (!apiUrl) {
+        throw new Error("API URL is not configured.");
+    }
+    
     const signal = getNewAbortSignal();
 
     try {
@@ -456,32 +382,24 @@ const callLLMChat = async (history: ChatMessage[], options: ApiOptions) => {
         updateRateLimitTimestamp();
         incrementApiCallCount();
 
-        const messages = history.map(({ role, content }) => ({ role, content }));
-        const requestBody = formatRequestBody(provider, model, messages, false);
-        const headers = formatRequestHeaders(provider, apiKey);
-
-        // For Google, add API key as query parameter
-        const endpoint = getApiEndpoint(provider, model);
-        const url = provider === 'google' ? `${endpoint}?key=${apiKey}` : endpoint;
-
-        const response = await fetch(url, {
+        const response = await fetch(apiUrl, {
             method: 'POST',
-            headers,
-            body: JSON.stringify(requestBody),
+            headers: getAuthHeader(options),
+            body: JSON.stringify({
+                model: model,
+                messages: history.map(({ role, content }) => ({ role, content })),
+            }),
             signal: signal,
         });
 
         if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            const errorMessage = errorData?.error?.message || errorData?.message || `API request failed with status ${response.status}`;
-            throw new Error(errorMessage);
+            const errorData = await response.json();
+            throw new Error(errorData?.error?.message || `API request failed with status ${response.status}`);
         }
 
         const data = await response.json();
-        const content = extractResponseContent(provider, data);
-
         resetContinuousFailureCount();
-        return content;
+        return data.choices[0].message.content;
 
     } catch (error: any) {
         incrementContinuousFailureCount();
@@ -489,7 +407,7 @@ const callLLMChat = async (history: ChatMessage[], options: ApiOptions) => {
             console.log("Chat API request was cancelled.");
             throw new Error("Request cancelled.");
         }
-        console.error(`Error calling ${provider} Chat API:`, error);
+        console.error("Error calling Chat API:", error);
         throw new Error(error.message || "An unknown error occurred while contacting the AI service.");
     } finally {
         setRequestStatus('idle');
@@ -500,18 +418,18 @@ const callLLMChat = async (history: ChatMessage[], options: ApiOptions) => {
 export const startExploitChat = async (context: ExploitContext, options: ApiOptions): Promise<string> => {
     const prompt = createInitialExploitChatPrompt(context);
     const initialHistory: ChatMessage[] = [{ role: 'user', content: prompt }];
-    return callLLMChat(initialHistory, options);
+    return callOpenRouterChat(initialHistory, options);
 };
 
 export const startSqlExploitChat = async (context: ExploitContext, options: ApiOptions): Promise<string> => {
     const prompt = createInitialSqlExploitChatPrompt(context);
     const initialHistory: ChatMessage[] = [{ role: 'user', content: prompt }];
-    return callLLMChat(initialHistory, options);
+    return callOpenRouterChat(initialHistory, options);
 };
 
 export const continueExploitChat = async (history: ChatMessage[], newUserMessage: string, options: ApiOptions): Promise<string> => {
     const updatedHistory: ChatMessage[] = [...history, { role: 'user', content: newUserMessage }];
-    return callLLMChat(updatedHistory, options);
+    return callOpenRouterChat(updatedHistory, options);
 };
 
 export const startGeneralChat = async (systemPrompt: string, userMessage: string, options: ApiOptions): Promise<string> => {
@@ -519,7 +437,7 @@ export const startGeneralChat = async (systemPrompt: string, userMessage: string
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userMessage }
     ];
-    return callLLMChat(initialHistory, options);
+    return callOpenRouterChat(initialHistory, options);
 };
 
 export const continueGeneralChat = async (systemPrompt: string, history: ChatMessage[], newUserMessage: string, options: ApiOptions): Promise<string> => {
@@ -528,79 +446,118 @@ export const continueGeneralChat = async (systemPrompt: string, history: ChatMes
         ...history,
         { role: 'user', content: newUserMessage }
     ];
-    return callLLMChat(fullHistory, options);
+    return callOpenRouterChat(fullHistory, options);
 };
 
-export const testApi = async (apiKey: string, model: string, provider: LLMProvider): Promise<{ success: boolean; error?: string }> => {
-    // Validate API key format based on provider
-    const keyValidation = validateApiKeyFormat(apiKey, provider);
-    if (!keyValidation.valid) {
-        return { success: false, error: keyValidation.error };
+export const testApi = async (apiKey: string, model: string, provider: ApiProvider = 'openrouter', baseUrl?: string): Promise<{ success: boolean; error?: string }> => {
+    // Validation based on provider
+    if (provider === 'openrouter' && apiKey && !apiKey.startsWith('sk-or-')) {
+        return { success: false, error: 'Invalid OpenRouter API key format. It should start with "sk-or-".' };
+    }
+
+    if (provider === 'localai' && !baseUrl) {
+        return { success: false, error: 'Base URL is required for Local AI.' };
+    }
+
+    if (provider !== 'localai' && !apiKey) {
+        return { success: false, error: 'API Key is required.' };
+    }
+
+    let apiUrl: string;
+    if (provider === 'localai') {
+        apiUrl = baseUrl!;
+    } else {
+        apiUrl = API_URLS[provider];
+    }
+
+    const headers: Record<string, string> = {
+        'Content-Type': 'application/json'
+    };
+
+    if (apiKey) {
+        headers['Authorization'] = `Bearer ${apiKey}`;
     }
 
     try {
-        const messages = [{ role: 'user', content: 'Test prompt' }];
-        const requestBody = formatRequestBody(provider, model, messages, false);
-        const headers = formatRequestHeaders(provider, apiKey);
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
 
-        // Limit response size for test
-        if (provider === 'openai' || provider === 'openrouter') {
-            (requestBody as any).max_tokens = 5;
-        } else if (provider === 'anthropic') {
-            (requestBody as any).max_tokens = 5;
-        } else if (provider === 'google') {
-            (requestBody as any).generationConfig = {
-                ...((requestBody as any).generationConfig || {}),
-                maxOutputTokens: 5,
-            };
-        }
-
-        const endpoint = getApiEndpoint(provider, model);
-        const url = provider === 'google' ? `${endpoint}?key=${apiKey}` : endpoint;
-
-        const response = await fetch(url, {
+        const response = await fetch(apiUrl, {
             method: 'POST',
             headers,
-            body: JSON.stringify(requestBody),
+            body: JSON.stringify({
+                model: model,
+                messages: [{ role: 'user', content: 'Test prompt' }],
+                max_tokens: 5,
+            }),
+            signal: controller.signal,
         });
 
-        const data = await response.json();
+        clearTimeout(timeoutId);
+
+        // Try to parse JSON response
+        let data: any;
+        try {
+            data = await response.json();
+        } catch (parseError) {
+            if (!response.ok) {
+                return { success: false, error: `HTTP ${response.status}: Unable to parse error response` };
+            }
+            return { success: false, error: 'Invalid JSON response from API' };
+        }
 
         if (!response.ok) {
-            const errorMessage = data?.error?.message || data?.message || `HTTP error! status: ${response.status}`;
-            return { success: false, error: errorMessage };
+            // Extract detailed error message
+            const errorMessage =
+                data?.error?.message ||
+                data?.message ||
+                data?.error ||
+                `HTTP ${response.status}: ${response.statusText}`;
+
+            // Add more context for common errors
+            if (response.status === 401) {
+                return { success: false, error: 'Authentication failed. Please check your API key.' };
+            } else if (response.status === 403) {
+                return { success: false, error: 'Access forbidden. Please verify your API key has the correct permissions.' };
+            } else if (response.status === 404) {
+                return { success: false, error: 'API endpoint not found. Please check your configuration.' };
+            } else if (response.status === 429) {
+                return { success: false, error: 'Rate limit exceeded. Please try again later.' };
+            }
+
+            return { success: false, error: String(errorMessage) };
+        }
+
+        // Verify response has expected structure
+        if (!data.choices || !Array.isArray(data.choices) || data.choices.length === 0) {
+            return { success: false, error: 'Unexpected API response format' };
         }
 
         return { success: true };
 
     } catch (error: any) {
-        return { success: false, error: error.message || 'A network error occurred.' };
-    }
-};
+        // Handle specific error types
+        if (error.name === 'AbortError') {
+            return { success: false, error: 'Connection timeout. The API did not respond within 15 seconds.' };
+        }
 
-// Helper function to validate API key format
-const validateApiKeyFormat = (apiKey: string, provider: LLMProvider): { valid: boolean; error?: string } => {
-    switch (provider) {
-        case 'openai':
-            if (!apiKey.startsWith('sk-')) {
-                return { valid: false, error: 'Invalid OpenAI API key format. It should start with "sk-".' };
-            }
-            break;
-        case 'anthropic':
-            if (!apiKey.startsWith('sk-ant-')) {
-                return { valid: false, error: 'Invalid Anthropic API key format. It should start with "sk-ant-".' };
-            }
-            break;
-        case 'google':
-            if (apiKey.length < 20) {
-                return { valid: false, error: 'Invalid Google API key format. Please check your API key.' };
-            }
-            break;
-        case 'openrouter':
-            if (!apiKey.startsWith('sk-or-')) {
-                return { valid: false, error: 'Invalid OpenRouter API key format. It should start with "sk-or-".' };
-            }
-            break;
+        if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+            return {
+                success: false,
+                error: 'Network error. Please check your internet connection and ensure the API endpoint is accessible. If using Local AI, verify the server is running.'
+            };
+        }
+
+        if (error.message.includes('CORS')) {
+            return {
+                success: false,
+                error: 'CORS error. The API endpoint may not allow requests from this origin.'
+            };
+        }
+
+        return {
+            success: false,
+            error: error.message || 'An unknown error occurred while testing the connection.'
+        };
     }
-    return { valid: true };
 };
