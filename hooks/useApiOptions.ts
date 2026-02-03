@@ -3,26 +3,47 @@ import { useMemo } from 'react';
 import { useSettings } from '../contexts/SettingsProvider.tsx';
 import { ApiOptions } from '../types.ts';
 
-export const useApiOptions = (): {
-    apiOptions: ApiOptions | null;
+export const useApiOptions = (): { 
+    apiOptions: ApiOptions | null; 
     isApiKeySet: boolean;
 } => {
-    const { apiKeys, selectedProvider, selectedModel } = useSettings();
+    const { apiProvider, apiKeys, openRouterModel, localAiConfig } = useSettings();
 
-    // Get the API key for the selected provider
-    const currentApiKey = apiKeys[selectedProvider];
-    const isApiKeySet = !!currentApiKey?.trim();
+    const isApiKeySet = useMemo(() => {
+        switch (apiProvider) {
+            case 'openrouter':
+                return !!apiKeys.openrouter?.trim();
+            case 'localai':
+                // For local AI, we just need a base URL (API key is optional)
+                return !!localAiConfig.baseUrl?.trim();
+            default:
+                return false;
+        }
+    }, [apiProvider, apiKeys, localAiConfig.baseUrl]);
 
     const apiOptions = useMemo(() => {
         if (!isApiKeySet) {
             return null;
         }
-        return {
-            apiKey: currentApiKey,
-            model: selectedModel,
-            provider: selectedProvider,
-        };
-    }, [isApiKeySet, currentApiKey, selectedModel, selectedProvider]);
+
+        switch (apiProvider) {
+            case 'openrouter':
+                return {
+                    provider: 'openrouter' as const,
+                    apiKey: apiKeys.openrouter,
+                    model: openRouterModel,
+                };
+            case 'localai':
+                return {
+                    provider: 'localai' as const,
+                    apiKey: apiKeys.localai || '',
+                    model: localAiConfig.model,
+                    baseUrl: localAiConfig.baseUrl,
+                };
+            default:
+                return null;
+        }
+    }, [isApiKeySet, apiProvider, apiKeys, openRouterModel, localAiConfig]);
 
     return {
         apiOptions,

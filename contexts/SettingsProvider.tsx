@@ -1,20 +1,19 @@
 // contexts/SettingsProvider.tsx
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
-import { ApiKeys, LLMProvider } from '../types.ts';
-import { PROVIDER_MODELS } from '../constants.ts';
+import { ApiKeys, ApiProvider, LocalAiConfig } from '../types.ts';
+import { OPEN_ROUTER_MODELS, DEFAULT_LOCAL_AI_URL, DEFAULT_LOCAL_AI_MODEL } from '../constants.ts';
 
 interface SettingsContextType {
     theme: 'light' | 'dark';
     setTheme: (theme: 'light' | 'dark') => void;
+    apiProvider: ApiProvider;
+    setApiProvider: (provider: ApiProvider) => void;
     apiKeys: ApiKeys;
     setApiKeys: (keys: ApiKeys) => void;
-    selectedProvider: LLMProvider;
-    setSelectedProvider: (provider: LLMProvider) => void;
-    selectedModel: string;
-    setSelectedModel: (model: string) => void;
-    // Legacy support for openRouterModel
     openRouterModel: string;
     setOpenRouterModel: (model: string) => void;
+    localAiConfig: LocalAiConfig;
+    setLocalAiConfig: (config: LocalAiConfig) => void;
     saveApiKeys: boolean;
     setSaveApiKeys: (save: boolean) => void;
 }
@@ -23,14 +22,13 @@ const SettingsContext = createContext<SettingsContextType | undefined>(undefined
 
 export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [theme, setTheme] = useState<'light' | 'dark'>('dark');
-    const [apiKeys, setApiKeys] = useState<ApiKeys>({
-        openai: '',
-        anthropic: '',
-        google: '',
-        openrouter: ''
+    const [apiProvider, setApiProvider] = useState<ApiProvider>('openrouter');
+    const [apiKeys, setApiKeys] = useState<ApiKeys>({ openrouter: '', localai: '' });
+    const [openRouterModel, setOpenRouterModel] = useState<string>(OPEN_ROUTER_MODELS[0]);
+    const [localAiConfig, setLocalAiConfig] = useState<LocalAiConfig>({
+        baseUrl: DEFAULT_LOCAL_AI_URL,
+        model: DEFAULT_LOCAL_AI_MODEL,
     });
-    const [selectedProvider, setSelectedProvider] = useState<LLMProvider>('openai');
-    const [selectedModel, setSelectedModel] = useState<string>(PROVIDER_MODELS.openai[0]);
     const [saveApiKeys, setSaveApiKeys] = useState<boolean>(false);
 
     useEffect(() => {
@@ -42,36 +40,22 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 setTheme('dark');
             }
 
+            const savedProvider = localStorage.getItem('apiProvider') as ApiProvider | null;
+            if (savedProvider) setApiProvider(savedProvider);
+
             const savedSavePref = localStorage.getItem('saveApiKeys') === 'true';
             setSaveApiKeys(savedSavePref);
 
             if (savedSavePref) {
                 const savedKeys = localStorage.getItem('apiKeys');
-                if (savedKeys) {
-                    const parsed = JSON.parse(savedKeys);
-                    // Migrate old format if needed
-                    if (parsed.openrouter && !parsed.openai) {
-                        setApiKeys({
-                            openai: '',
-                            anthropic: '',
-                            google: '',
-                            openrouter: parsed.openrouter
-                        });
-                    } else {
-                        setApiKeys(parsed);
-                    }
-                }
+                if (savedKeys) setApiKeys(JSON.parse(savedKeys));
             }
+            
+            const savedOpenRouterModel = localStorage.getItem('openRouterModel');
+            if (savedOpenRouterModel) setOpenRouterModel(savedOpenRouterModel);
 
-            const savedProvider = localStorage.getItem('selectedProvider') as LLMProvider | null;
-            if (savedProvider) {
-                setSelectedProvider(savedProvider);
-            }
-
-            const savedModel = localStorage.getItem('selectedModel');
-            if (savedModel) {
-                setSelectedModel(savedModel);
-            }
+            const savedLocalAiConfig = localStorage.getItem('localAiConfig');
+            if (savedLocalAiConfig) setLocalAiConfig(JSON.parse(savedLocalAiConfig));
 
         } catch (e) { console.error("Could not load settings:", e); }
     }, []);
@@ -85,6 +69,11 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }, [theme]);
 
     useEffect(() => {
+        try { localStorage.setItem('apiProvider', apiProvider); }
+        catch (e) { console.error("Could not save API provider:", e); }
+    }, [apiProvider]);
+
+    useEffect(() => {
         try {
             localStorage.setItem('saveApiKeys', String(saveApiKeys));
             if (saveApiKeys) {
@@ -96,25 +85,23 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }, [saveApiKeys, apiKeys]);
 
     useEffect(() => {
-        try { localStorage.setItem('selectedProvider', selectedProvider); }
-        catch (e) { console.error("Could not save provider:", e); }
-    }, [selectedProvider]);
+        try { localStorage.setItem('openRouterModel', openRouterModel); }
+        catch (e) { console.error("Could not save OpenRouter model:", e); }
+    }, [openRouterModel]);
 
     useEffect(() => {
-        try { localStorage.setItem('selectedModel', selectedModel); }
-        catch (e) { console.error("Could not save model:", e); }
-    }, [selectedModel]);
-
+        try { localStorage.setItem('localAiConfig', JSON.stringify(localAiConfig)); }
+        catch (e) { console.error("Could not save Local AI config:", e); }
+    }, [localAiConfig]);
+    
     const value = useMemo(() => ({
         theme, setTheme,
+        apiProvider, setApiProvider,
         apiKeys, setApiKeys,
-        selectedProvider, setSelectedProvider,
-        selectedModel, setSelectedModel,
-        // Legacy support
-        openRouterModel: selectedModel,
-        setOpenRouterModel: setSelectedModel,
+        openRouterModel, setOpenRouterModel,
+        localAiConfig, setLocalAiConfig,
         saveApiKeys, setSaveApiKeys,
-    }), [theme, apiKeys, selectedProvider, selectedModel, saveApiKeys]);
+    }), [theme, apiProvider, apiKeys, openRouterModel, localAiConfig, saveApiKeys]);
 
     return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;
 };
