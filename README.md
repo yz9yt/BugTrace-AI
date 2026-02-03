@@ -18,6 +18,7 @@
 - [✨ Features](#-features)
 - [🛠️ Technology Stack](#️-technology-stack)
 - [🚀 Getting Started](#-getting-started)
+- [🔑 API Configuration](#-api-configuration)
 - [📜 License](#-license)
 
 ***
@@ -88,7 +89,11 @@ This process of **Recursion -> Consolidation -> Refinement** is the core of the 
 ## 🛠️ Technology Stack
 - **Frontend**: React, TypeScript, Vite
 - **Styling**: Tailwind CSS
-- **AI Provider**: OpenRouter (compatible with models like Google Gemini, Anthropic Claude, and OpenAI GPT)
+- **AI Providers**: Multiple provider support including:
+  - OpenAI (GPT-4o, GPT-4 Turbo, GPT-3.5 Turbo)
+  - Anthropic (Claude 3.5 Sonnet, Claude 3 Opus)
+  - Google AI (Gemini 2.0 Flash, Gemini 1.5 Pro)
+  - OpenRouter (Access to all models)
 - **Deployment**: Docker, Nginx
 
 ## 🚀 Getting Started
@@ -131,14 +136,83 @@ To stop the application, run:
 docker-compose -f docker-compose.yml down
 ```
 
-### API Configuration
-All AI-powered features require an API key.
+## 🔑 API Configuration
 
-- Click the **Settings** icon (⚙️) in the header.
-- The application uses [OpenRouter.ai](https://openrouter.ai) to allow access to a wide variety of models. You will need to get an OpenRouter API key.
-- Enter your key in the settings modal.
-- **Model Recommendation**: For the best performance and reliability, it is highly recommended to use the **google/gemini-flash** model, as the application's internal prompts have been specifically engineered and optimized for it.
-- You can optionally choose to save the key in your browser's localStorage for convenience.
+### Multiple LLM Provider Support
+
+**NEW in v0.1.3**: BugTrace-AI now supports direct API keys from multiple LLM providers! You're no longer limited to OpenRouter and can use API keys directly from OpenAI, Anthropic, Google AI, or OpenRouter.
+
+### Setting Up Your API Key
+
+1. Click the **Settings** icon (⚙️) in the header
+2. **Select your preferred LLM provider** from the dropdown:
+   - **OpenAI**: Use GPT-4o, GPT-4 Turbo, or GPT-3.5 Turbo
+   - **Anthropic**: Use Claude 3.5 Sonnet, Claude 3 Opus, or other Claude models
+   - **Google AI**: Use Gemini 2.0 Flash, Gemini 1.5 Pro, or other Gemini models
+   - **OpenRouter**: Access to hundreds of models from multiple providers
+3. **Get your API key** from the appropriate provider:
+   - **OpenAI**: [platform.openai.com/api-keys](https://platform.openai.com/api-keys)
+   - **Anthropic**: [console.anthropic.com/settings/keys](https://console.anthropic.com/settings/keys)
+   - **Google AI**: [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey)
+   - **OpenRouter**: [openrouter.ai/keys](https://openrouter.ai/keys)
+4. Enter your API key in the settings modal
+5. Select your preferred model from the dropdown
+6. Click **Test API Connection** to verify your key works
+7. Optionally enable **Save API keys in your browser** to store keys in localStorage (only recommended on trusted devices)
+
+### Model Recommendations
+
+The application's prompts have been optimized for capable models. For best results, use:
+
+- **OpenAI**: GPT-4o or GPT-4 Turbo
+- **Anthropic**: Claude 3.5 Sonnet or Claude 3 Opus
+- **Google AI**: Gemini 1.5 Pro or Gemini 2.0 Flash
+- **OpenRouter**: google/gemini-2.5-flash (original optimization target)
+
+### API Key Format Examples
+
+Each provider uses a different API key format:
+
+- **OpenAI**: `sk-...` (starts with sk-)
+- **Anthropic**: `sk-ant-...` (starts with sk-ant-)
+- **Google AI**: `AIza...` (typically starts with AIza)
+- **OpenRouter**: `sk-or-v1...` (starts with sk-or-)
+
+The application will validate your key format before allowing you to save it.
+
+### Provider-Specific Notes
+
+#### OpenAI
+
+- Direct access to GPT models without intermediary services
+- Supports JSON mode for structured responses
+- Rate limits apply based on your API tier
+
+#### Anthropic
+
+- Uses the Messages API (v1)
+- Supports Claude's advanced reasoning capabilities
+- Requires API key in x-api-key header
+
+#### Google AI
+
+- Uses the Generative Language API
+- Gemini models support multimodal capabilities
+- API key passed as query parameter
+
+#### OpenRouter
+
+- Provides access to multiple model providers through a single API
+- Useful for comparing different models
+- Supports dynamic model list fetching
+
+### Security Considerations
+
+- **API keys are sensitive**: Treat them like passwords
+- **Browser storage**: Only enable "Save API keys" on devices you trust
+- **No backend storage**: All API keys are stored client-side (in your browser)
+- **HTTPS only**: Always use HTTPS in production to protect API keys in transit
+- **Rotation**: Regularly rotate your API keys as a security best practice
 
 ## 📜 License
 This project is licensed under the MIT License. See the LICENSE file for details.

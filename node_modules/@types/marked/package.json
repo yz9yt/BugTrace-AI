@@ -1,0 +1,12 @@
+{
+    "name": "@types/marked",
+    "version": "6.0.0",
+    "description": "Stub TypeScript definitions entry for marked, which provides its own types definitions",
+    "main": "",
+    "scripts": {},
+    "license": "MIT",
+    "dependencies": {
+        "marked": "*"
+    },
+    "deprecated": "This is a stub types definition. marked provides its own type definitions, so you do not need this installed."
+}

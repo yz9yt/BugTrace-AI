@@ -153,13 +153,19 @@ export interface FileUploadAnalysisResult {
     manualTestingGuide: string;
 }
 
+export type LLMProvider = 'openai' | 'anthropic' | 'google' | 'openrouter';
+
 export interface ApiKeys {
+    openai: string;
+    anthropic: string;
+    google: string;
     openrouter: string;
 }
 
 export type ApiOptions = {
     apiKey: string;
     model: string;
+    provider: LLMProvider;
 };
 
 // New interface for vulnerability validation result
