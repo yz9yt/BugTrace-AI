@@ -1,11 +1,11 @@
 // @author: Albert C | @yz9yt | github.com/yz9yt
 // services/Service.ts
-// version 0.1 Beta
+// version 0.2 Beta - Multi-provider support
 import {
     ApiOptions, Vulnerability, VulnerabilityReport, XssPayloadResult, ForgedPayloadResult,
     ChatMessage, ExploitContext, HeadersReport, DomXssAnalysisResult,
     FileUploadAnalysisResult, DastScanType, SqlmapCommandResult,
-    Severity
+    Severity, ApiProvider
 } from '../types.ts';
 import {
     createSastAnalysisPrompt,
@@ -41,14 +41,45 @@ import {
     resetContinuousFailureCount,
 } from '../utils/apiManager.ts';
 
-const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
+// API endpoint URLs
+const API_URLS = {
+    openrouter: "https://openrouter.ai/api/v1/chat/completions",
+    localai: "", // Will be provided by user
+};
+
+const getApiUrl = (options: ApiOptions): string => {
+    if (options.provider === 'localai' && options.baseUrl) {
+        return options.baseUrl;
+    }
+    return API_URLS[options.provider];
+};
+
+const getAuthHeader = (options: ApiOptions): Record<string, string> => {
+    const headers: Record<string, string> = {
+        'Content-Type': 'application/json'
+    };
+    
+    if (options.apiKey) {
+        headers['Authorization'] = `Bearer ${options.apiKey}`;
+    }
+    
+    return headers;
+};
 
 const callApi = async (prompt: string, options: ApiOptions, isJson: boolean = true) => {
     await enforceRateLimit();
-    const { apiKey, model } = options;
-    if (!apiKey) {
+    const { apiKey, model, provider } = options;
+    
+    // For non-local providers, API key is required
+    if (provider !== 'localai' && !apiKey) {
         throw new Error("API Key is not configured.");
     }
+    
+    const apiUrl = getApiUrl(options);
+    if (!apiUrl) {
+        throw new Error("API URL is not configured.");
+    }
+    
     const signal = getNewAbortSignal();
 
     try {
@@ -56,12 +87,9 @@ const callApi = async (prompt: string, options: ApiOptions, isJson: boolean = tr
         updateRateLimitTimestamp();
         incrementApiCallCount();
 
-        const response = await fetch(OPENROUTER_API_URL, {
+        const response = await fetch(apiUrl, {
             method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${apiKey}`,
-                'Content-Type': 'application/json'
-            },
+            headers: getAuthHeader(options),
             body: JSON.stringify({
                 model: model,
                 messages: [{ role: 'user', content: prompt }],
@@ -91,7 +119,7 @@ const callApi = async (prompt: string, options: ApiOptions, isJson: boolean = tr
             console.log("API request was cancelled.");
             throw new Error("Request cancelled.");
         }
-        console.error("Error calling OpenRouter:", error);
+        console.error("Error calling API:", error);
         throw new Error(error.message || "An unknown error occurred while contacting the AI service.");
     } finally {
         setRequestStatus('idle');
@@ -336,10 +364,17 @@ export const generateSstiPayloads = async (engine: string, goal: string, options
 // --- Chat Functions ---
 const callOpenRouterChat = async (history: ChatMessage[], options: ApiOptions) => {
     await enforceRateLimit();
-    const { apiKey, model } = options;
-    if (!apiKey) {
+    const { apiKey, model, provider } = options;
+    
+    if (provider !== 'localai' && !apiKey) {
         throw new Error("API Key is not configured.");
     }
+    
+    const apiUrl = getApiUrl(options);
+    if (!apiUrl) {
+        throw new Error("API URL is not configured.");
+    }
+    
     const signal = getNewAbortSignal();
 
     try {
@@ -347,12 +382,9 @@ const callOpenRouterChat = async (history: ChatMessage[], options: ApiOptions) =
         updateRateLimitTimestamp();
         incrementApiCallCount();
 
-        const response = await fetch(OPENROUTER_API_URL, {
+        const response = await fetch(apiUrl, {
             method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${apiKey}`,
-                'Content-Type': 'application/json'
-            },
+            headers: getAuthHeader(options),
             body: JSON.stringify({
                 model: model,
                 messages: history.map(({ role, content }) => ({ role, content })),
@@ -375,7 +407,7 @@ const callOpenRouterChat = async (history: ChatMessage[], options: ApiOptions) =
             console.log("Chat API request was cancelled.");
             throw new Error("Request cancelled.");
         }
-        console.error("Error calling OpenRouter Chat:", error);
+        console.error("Error calling Chat API:", error);
         throw new Error(error.message || "An unknown error occurred while contacting the AI service.");
     } finally {
         setRequestStatus('idle');
@@ -417,18 +449,39 @@ export const continueGeneralChat = async (systemPrompt: string, history: ChatMes
     return callOpenRouterChat(fullHistory, options);
 };
 
-export const testApi = async (apiKey: string, model: string): Promise<{ success: boolean; error?: string }> => {
-    if (!apiKey.startsWith('sk-or-')) {
+export const testApi = async (apiKey: string, model: string, provider: ApiProvider = 'openrouter', baseUrl?: string): Promise<{ success: boolean; error?: string }> => {
+    // Validation based on provider
+    if (provider === 'openrouter' && apiKey && !apiKey.startsWith('sk-or-')) {
         return { success: false, error: 'Invalid OpenRouter API key format. It should start with "sk-or-".' };
     }
     
+    if (provider === 'localai' && !baseUrl) {
+        return { success: false, error: 'Base URL is required for Local AI.' };
+    }
+    
+    if (provider !== 'localai' && !apiKey) {
+        return { success: false, error: 'API Key is required.' };
+    }
+    
+    let apiUrl: string;
+    if (provider === 'localai') {
+        apiUrl = baseUrl!;
+    } else {
+        apiUrl = API_URLS[provider];
+    }
+    
+    const headers: Record<string, string> = {
+        'Content-Type': 'application/json'
+    };
+    
+    if (apiKey) {
+        headers['Authorization'] = `Bearer ${apiKey}`;
+    }
+    
     try {
-        const response = await fetch(OPENROUTER_API_URL, {
+        const response = await fetch(apiUrl, {
             method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${apiKey}`,
-                'Content-Type': 'application/json'
-            },
+            headers,
             body: JSON.stringify({
                 model: model,
                 messages: [{ role: 'user', content: 'Test prompt' }],

@@ -153,13 +153,23 @@ export interface FileUploadAnalysisResult {
     manualTestingGuide: string;
 }
 
+export type ApiProvider = 'openrouter' | 'localai';
+
 export interface ApiKeys {
     openrouter: string;
+    localai: string; // Optional API key for local AI
+}
+
+export interface LocalAiConfig {
+    baseUrl: string;
+    model: string;
 }
 
 export type ApiOptions = {
+    provider: ApiProvider;
     apiKey: string;
     model: string;
+    baseUrl?: string; // For Local AI / LiteLLM
 };
 
 // New interface for vulnerability validation result

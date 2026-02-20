@@ -13,6 +13,16 @@ export const OPEN_ROUTER_MODELS = [
     'openai/gpt-3.5-turbo',
 ];
 
+// Default Local AI / LiteLLM settings
+export const DEFAULT_LOCAL_AI_URL = 'http://localhost:4000/v1/chat/completions';
+export const DEFAULT_LOCAL_AI_MODEL = 'gpt-3.5-turbo';
+
+// API Provider labels for UI
+export const API_PROVIDER_LABELS = {
+    openrouter: 'OpenRouter',
+    localai: 'Local AI / LiteLLM',
+} as const;
+
 
 export const SEVERITY_STYLES: Record<Severity, { headerBg: string; border: string; text: string }> = {
   [Severity.CRITICAL]: {
